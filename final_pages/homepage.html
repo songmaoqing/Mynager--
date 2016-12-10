@@ -1,0 +1,105 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+	<meta charset="utf-8">
+	<title>主页</title>
+	<link rel="stylesheet" href="/css/bootstrap.min.css">  
+	<link rel="stylesheet" href="/css/base.css">
+	<script type="text/javascript" src="/js/jquery-3.1.0.min.js"></script>
+	<script type="text/javascript" src="/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/3rd/swig.js"></script>
+	<script type="text/javascript" src="/js/basicapi.js"></script>
+	<script type="text/javascript" src="/js/homepage.js"></script>
+</head>
+<body>
+<div id="container">
+	<div id="header">
+		<span>主页</span>
+		<div class="header_right_item">登录</div>
+		<div class="clear"></div>
+	</div>
+	<div class="section">
+		<div class="homepage_intro">
+			<h3 >欢迎使用Mynager</h3>
+			<p>通过Mynager：</p>
+			<p>作为活动发布方你可以发布会议活动并邀请用户参加或者接受用户报名</p>
+			<p>作为活动参与者你可以接受会议活动邀请或者报名参加</p>
+			<p>先这么瞎逼一写，之后再说</p>
+		</div>
+		<div class="clear"></div>
+		<div class="line">
+			<input class="line_member btn btn-default" type="button" value="登陆已有帐号" onclick=""/>
+			<input class="line_member btn btn-default" type="button" value="注册新账号" onclick=""/>
+			<input class="line_member btn btn-default" type="button" value="进入发布方界面" onclick=""/>
+			<input class="line_member btn btn-default" type="button" value="申请新会议" onclick=""/>
+			<input class="line_member btn btn-default" type="button" value="进入个人中心" onclick=""/>
+			<div class="clear"></div>
+			//不同状态的用户（未登录、发布方、参与者）显示不同按钮
+		</div>
+	</div>
+	<div class="section">
+		<div class="section_header">会议列表</div>
+		<div class="line">
+			<div class="line_member">关键词:</div>
+			<div class="input-group long_input line_member">
+				<input class="form-control" type="text">
+				<span class="input-group-btn">
+					<button class="btn btn-default" type="button">搜索</button>
+				</span>
+			</div>
+			<div class="clear"></div>
+		</div></br>
+		<div id="meeting_lists"></div>
+		<div class="pages" id="page_nums"></div>
+	</div>
+</div>
+<script type="text/template" id="tpl-page_nums">
+    <ul class="pagination">
+    <li><a href="#">&laquo;</a></li>
+        <li><a href="#">{{ page_index }}</a></li>
+        <li><a href="#">&raquo;</a></li>
+    </ul>
+</script>
+<script type="text/template" id="tpl-meeting_lists">
+    {% for meet in meetings %}
+    <div class="hp_item">
+        <div class="item_name"><p>{{ meet.name }}</p></div>
+        <div class="hp_item_intro"><p>{{ meet.description }}</p></div>
+        <div class="btn-group item_btn">
+            <button type="button" class="btn btn-default">查看详情</button>
+            <button type="button" class="btn btn-default">报名参加</button>
+        </div>
+        <div class="clear"></div>
+    </div>
+    {% endfor %}
+</script>
+</body>
+<script type="text/javascript">
+    var total_page = 0, page_index = 0, meetings = [];
+function GetAllList(index) {
+    api.get('/api/u/meeting/list', {"meeting_num": meeting_num, "page_index": index}, function (data) {
+        //status:状态, total_page:总页数, list:会议信息列表
+        if (data[status] == false) {
+            alert("获取会议列表错误，可能该页会议不存在！");
+            return;
+        }
+        page_index = index;
+        meetings = data["list"];
+        $("#page_nums").html(swig.render($("#tpl-page_nums").html(), { page_index }));
+        $("#meeting_lists").html(swig.render($("#tpl-meeting_lists").html(), { meetings }))
+    }, dftFail);
+}
+
+function SearchMeeting(key_word, page_index, fun0) {
+    api.post('/api/u/meeting/list', {"key_word": key_word, "meeting_num": meeting_num, "page_index": page_index}, function (data) {
+        fun0(data);
+    }, dftFail);
+}
+
+$(function () {
+    GetAllList(1);
+    //SearchMeeting("那些年", 2);
+    //console.log(GetLogStatus());
+});
+</script>
+</html>
