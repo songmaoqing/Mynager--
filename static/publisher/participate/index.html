@@ -1,0 +1,138 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+	<meta charset="utf-8">
+	<title>会议参加者管理</title>
+	<link rel="stylesheet" href="/css/bootstrap.min.css">
+	<link rel="stylesheet" href="/css/base.css">
+	<link rel="stylesheet" type="text/css" href="/css/base-y.css">
+	<script type="text/javascript" src="/js/jquery-3.1.0.min.js"></script>
+	<script type="text/javascript" src="/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="/3rd/swig.js"></script>
+    <script type="text/javascript" src="/js/base.js"></script>
+</head>
+<body>
+<div id="container">
+	<div id="header">
+		<b>会议参加者管理</b>
+		<div class="clear"></div>
+	</div>
+	<div class="section" id="user_list1"></div>
+    <div class="section" id="user_list2"></div>
+	<div class="section">
+		<div class="section_header">邀请参加者</div>
+		<div class="line">
+			<div class="line_member">关键词:</div>
+			<div class="input-group long_input line_member">
+				<input class="form-control" type="text">
+				<span class="input-group-btn">
+					<button class="btn btn-default" type="button">搜索</button>
+				</span>
+			</div>
+			<div class="clear"></div>
+		</div>
+		<div class="list">
+			<div class="item">
+				<div class="item_name"><p>搜索结果1姓名</p></div>
+				<div class="item_intro"><p>简介1</p></div>
+				<div class="item_note"><p>已接受邀请</p></div>
+				<div class="clear"></div>
+			</div>
+			<div class="item">
+				<div class="item_name"><p>搜索结果2姓名</p></div>
+				<div class="item_intro"><p>简介2</p></div>
+				<div class="item_note"><p>已发送邀请</p></div>
+				<div class="clear"></div>
+			</div>
+			<div class="item">
+				<div class="item_name"><p>搜索结果3姓名</p></div>
+				<div class="item_intro"><p>简介3</p></div>
+				<div class="item_note"><p>未邀请</p></div>
+				<div class="btn-group item_sbtn">
+					<button type="button" class="btn btn-default">发送邀请</button>
+				</div>
+				<div class="clear"></div>
+			</div>
+		</div>
+		<div class="pages">
+			<ul class="pagination">
+				<li><a href="#">&laquo;</a></li>
+				<li class="active"><a href="#">1</a></li>
+				<li><a href="#">2</a></li>
+				<li><a href="#">&raquo;</a></li>
+			</ul>
+		</div>
+	</div>
+
+</div>
+</body>
+<script type="text/template" id="tpl-user_list1">
+    <div class="section_header">当前参加者</div>
+    <div class="list">
+        {% for user in users %}
+            {% if user.status > 1 %}
+			<div class="item">
+				<div class="item_name"><p>{{ user.user_name }}</p></div>
+				<div class="item_intro"><p>简介1</p></div>
+				<div class="item_note"><p>{% if user.status == 2 %}已发送邀请{% else %}参加会议{% endif %}</p></div>
+				<div class="btn-group item_sbtn">
+					<button type="button" class="btn btn-default">{% if user.status == 2 %}取消邀请{% else %}移除参加者{% endif %}</button>
+				</div>
+				<div class="clear"></div>
+		</div>
+            {% endif %}
+        {% endfor %}
+    </div>
+		<div class="pages">
+			<ul class="pagination">
+				<li><a href="#">&laquo;</a></li>
+				<li class="active"><a href="#">1</a></li>
+				<li><a href="#">2</a></li>
+				<li><a href="#">&raquo;</a></li>
+			</ul>
+		</div>
+		<div class="line">
+			<div class="line_member">发送通知</div>
+			<textarea class="line_member base_textarea form-control" rows="3" name=""></textarea>
+			<input class="line_member btn btn-default" type="button" value="发送" onclick=""/></br>
+			<div class="clear"></div>
+		</div>
+</script>
+<script type="text/template" id="tpl-user_list2">
+    <div class="section_header">报名批准</div>
+    <div class="list">
+        {% for user in users %}
+        {% if user.status == 1 %}
+        <div class="item">
+            <div class="item_name"><p>{{ user.user_name }}</p></div>
+            <div class="item_intro"><p>简介1</p></div>
+            <div class="item_note"><p>说明</p></div>
+            <div class="btn-group item_sbtn">
+                <button type="button" class="btn btn-default">同意</button>
+                <button type="button" class="btn btn-default">拒绝</button>
+            </div>
+            <div class="clear"></div>
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    <div class="pages">
+        <ul class="pagination">
+            <li><a href="#">&laquo;</a></li>
+            <li class="active"><a href="#">1</a></li>
+            <li><a href="#">2</a></li>
+            <li><a href="#">&raquo;</a></li>
+        </ul>
+    </div>
+</script>
+<script type="text/javascript">
+    var users;
+    $(function () {
+        api.get("/api/u/meeting/participate", {"meet_id": urlParam.meet_id }, function (data) {
+            users = data;
+            RenderTpl("user_list1", users);
+            RenderTpl("user_list2", users);
+        }, dftFail)
+    })
+</script>
+</html>

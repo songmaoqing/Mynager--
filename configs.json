@@ -10,5 +10,5 @@
   "DB_PASS": "xuwm2014",
   "DB_HOST": "127.0.0.1",
   "DB_PORT": "3306",
-  "SITE_DOMAIN": "http://59.66.138.79/wechat"
+  "SITE_DOMAIN": "http://59.66.138.79"
 }

@@ -10,4 +10,5 @@ __author__ = "xyzS"
 
 urlpatterns = [
     url(r'^admin/?$', AdminPageView.as_view()),
+    url(r'^user/list?$', UserListView.as_view())
 ]

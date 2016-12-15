@@ -1,30 +1,34 @@
 from codex.baseerror import *
 from codex.baseview import APIView
-from wechat.models import MyUser, Meeting, Attachment
+from django.utils import timezone
+from wechat.models import MyUser, Meeting, Attachment, Relation
 from wechat.views import CustomWeChatView
 from django.contrib.auth.models import User
 import urllib
+import datetime
 import math
 from urllib import request
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
-
-class HomePageView(APIView):
-    @login_required
-    def registerMeeting(self):
-        self.check_input('id', 'meeting_id')
-        user = MyUser.objects.get(id=self.input['id'])
-        meeting = Meeting.objects.get(id=self.input['meeting_id'])
-        meeting.users_registered.add(user)
-        user.meetings_registered.add(meeting)
+from Mynager.settings import MEDIA_ROOT, SITE_DOMAIN
 
 class MeetingListView(APIView):
     def get(self):
-        self.check_input("meeting_num", "page_index")
-        meetings = Meeting.objects.filter(status__gt=-1)
+        self.check_input("meeting_num", "page_index", "status")
+        stat = int(self.input["status"])
+        if stat == -1:
+            meetings = Meeting.objects.filter(status__gt=0)
+        elif stat == 0:
+            if self.user.myuser.user_type < 3:
+                raise InputError("您没有权限访问这些会议！")
+            meetings = Meeting.objects.filter(status=0)
+        else:
+            if self.user.myuser.user_type < 3:
+                raise InputError("您没有权限访问这些会议！")
+            meetings = Meeting.objects.filter(status__in=[-2, -1, 1])
         data = {
             "status": False,
-            "total_page": 0,
+            "total_page": 1,
             "list": []
         }
         num0 = int(self.input["meeting_num"])
@@ -37,18 +41,36 @@ class MeetingListView(APIView):
                 end0 = num0 * num1
             start0 = num0 * (num1 - 1)
             data["status"] = True
-            data["total_page"] = math.ceil(len0 / num0)
-            data["list"] = [{
-                "id": meet0.id,
-                "meeting_type": meet0.meeting_type,
-                "name": meet0.name,
-                "organizer": meet0.organizer.name,
-                "pic_url": meet0.pic_url,
-                "start_time": meet0.start_time,
-                "description": meet0.description,
-                "place": meet0.place,
-            } for meet0 in meetings[start0:end0]
-        ]
+            if len0 != 0:
+                data["total_page"] = math.ceil(len0 / num0)
+            else:
+                data["total_page"] = 1
+            if self.request.user.is_authenticated():
+                data["list"] = [{
+                    "id": meet0.id,
+                    "meeting_type": meet0.meeting_type,
+                    "relation": meet0.get_relationship(self.user.myuser),
+                    "name": meet0.name,
+                    "status": meet0.status,
+                    "organizer": meet0.organizer.name,
+                    "pic_url": meet0.pic_url,
+                    "description": meet0.description,
+                    "place": meet0.place,
+                    } for meet0 in meetings[start0:end0]
+                ]
+            else:
+                data["list"] = [{
+                    "id": meet0.id,
+                    "meeting_type": meet0.meeting_type,
+                    "relation": -1,
+                    "name": meet0.name,
+                    "status": meet0.status,
+                    "organizer": meet0.organizer.name,
+                    "pic_url": meet0.pic_url,
+                    "description": meet0.description,
+                    "place": meet0.place,
+                    } for meet0 in meetings[start0:end0]
+                ]
         #print (data)
         return data
 
@@ -87,15 +109,19 @@ class MeetingListView(APIView):
         #print(data)
         return data
 
-
-
 class MeetingDetailView(APIView):
-    @login_required
     def get(self):
         self.check_input("meeting_id")
-        meeting0 = Meeting.objects.get(id = self.input["meeting_id"])
-        if meeting0.status < 0:
-            raise LogicError("该会议还未处于发布状态，您无法查看该会议的信息！")
+        meeting1 = Meeting.objects.all().filter(id=int(self.input["meeting_id"]))
+        if len(meeting1) < 1:
+            raise LogicError("未找到id为" + self.input["meeting_id"] + "的会议！")
+        meeting0 = meeting1[0]
+        if self.request.user.is_authenticated():
+            user_type = self.user.myuser.user_type
+        else:
+            user_type = 0
+        if meeting0.status <= 0 and user_type < 2:
+            raise LogicError("该会议不处于发布状态，您无法查看该会议的信息！")
         return {
             "meeting_type": meeting0.meeting_type,
             "name": meeting0.name,
@@ -103,35 +129,55 @@ class MeetingDetailView(APIView):
             "max_people_num": meeting0.max_people_num,
             "phone_num": meeting0.phone_num,
             "description": meeting0.description,
-            "start_time": meeting0.start_time,
-            "end_time": meeting0.end_time,
+            "start_time": datetime.datetime.strftime(meeting0.start_time, '%Y-%m-%d'),
+            "end_time": datetime.datetime.strftime(meeting0.end_time, '%Y-%m-%d'),
             "place": meeting0.place,
             "status": meeting0.status,
             "pic_url": meeting0.pic_url,
-            "homepage_url": meeting0.homepage_url,
         }
 
     @login_required
     def post(self):
-        if request.user.account_name:
-            self.check_input("meeting_id")
-            meeting0 = Meeting.objects.get(id = self.input["meeting_id"])
-            meeting0.change_information(self.input)
+        if self.user.myuser.user_type < 2:
+            raise InputError("您没有权限修改会议状态！")
+        self.check_input("meeting_id")
+        if 'status' in self.input and self.user.myuser.user_type < 3:
+            raise InputError("您没有权限修改会议状态！")
+        meeting0 = Meeting.objects.get(id = self.input["meeting_id"])
+        meeting0.change_information(self.input)
 
 class MeetingCreateView(APIView):
     @login_required
     def post(self):
-        if request.user.myuser.user_type > 0:
+        if self.request.user.myuser.user_type < 2:
             raise InputError("您没有权限创建会议！")
-        self.input["organizer"] = self.user.myuser
-        Meeting.create_new_meeting(self.input)
+        self.check_input('meeting_type', 'name', 'max_people_num', 'phone_num', 'description', 'start_time', 'end_time', 'place', 'uploadpic')
+        data = {
+            'status': 0
+        }
+        for key in self.input:
+            data[key] = self.input[key]
+        data['uploadpic'] = self.request.FILES['uploadpic']
+        data['organizer'] = self.request.user.myuser
+        data['start_time'] = datetime.datetime.strptime(data['start_time'], "%Y-%m-%d")
+        data['max_people_num'] = int(data['max_people_num'])
+        data['end_time'] = datetime.datetime.strptime(data['end_time'], "%Y-%m-%d")
+        if data['start_time'] > data['end_time']:
+            raise LogicError("会议开始时间晚于会议结束时间！")
+        time_name = str(timezone.now().timestamp()) + ".png"
+        img_path = MEDIA_ROOT + '/' + time_name
+        open(img_path, "wb").write(data['uploadpic'].read())
+        data['pic_url'] = SITE_DOMAIN + '/upload/' + time_name
+        Meeting.create_new_meeting(data)
 
     @login_required
     def get(self):
         self.check_input("meeting_id")
-        if request.user.myuser.user_type < 2:
+        if self.request.user.myuser.user_type < 2:
             raise InputError("您没有权限删除该会议！")
         meeting0 = Meeting.objects.get(id = self.input["meeting_id"])
+        if self.user.myuser.user_type == 2 and meeting0.organizer != self.user.myuser:
+            raise LogicError("该会议不是由您创建，您无法删除该会议！")
         meeting0.delete()
 
 class RegisterView(APIView):
@@ -139,13 +185,18 @@ class RegisterView(APIView):
         self.check_input('user_type', 'account_name', 'account_pass')
         MyUser.create_new_user(self.input)
 
-
 class LogInView(APIView):
     def get(self):
         if self.request.user.is_authenticated():
-            return self.request.user.myuser.user_type
+            usr = self.request.user.myuser
+            return {
+                'type': usr.user_type,
+                'name': usr.name,
+            }
         else:
-            return 0
+            return {
+                "type": 0
+            }
 
     def post(self):
         self.check_input('username', 'password')
@@ -186,109 +237,152 @@ class UserBindView(APIView):
         else:
             raise ValidateError("账号或者密码不正确，请重新输入！")
 
-class UserCenterView(APIView):
+class UserMessageView(APIView):
     @login_required
-    def modInfo(self):
-        self.check_input('id')
-        MyUser.objects.get(id = self.input['id']).change_information(self.input)
+    def get(self):
+        if self.request.user.is_authenticated():
+            usr = self.request.user.myuser
+            return {
+                'type': usr.user_type,
+                'user_status': usr.user_status,
+                'name': usr.name,
+                'phone_num': usr.phone_num,
+                'description': usr.description,
+                'pic_url': usr.pic_url,
+                'open_id': usr.open_id,
+                'email': usr.user.email,
+                'user_image': usr.user_image,
+                'idcard_image': usr.idcard_image,
+                'user_IDnum': usr.user_IDnum,
+                'true_name': usr.name_true
+            }
 
     @login_required
-    def lookupJoined(self):
-        self.check_input('id')
-        user = MyUser.objects.get(id = self.input['id'])
-        return list(user.meetings_joined)
+    def post(self):
+        if self.request.user.is_authenticated():
+            usr = self.request.user.myuser
+            data = self.input
+            if "img" in data:
+                time_name = str(timezone.now().timestamp()) + ".png"
+                img_path = MEDIA_ROOT + '/' + time_name
+                open(img_path, "wb").write(data['img'][0].read())
+                data['pic_url'] = SITE_DOMAIN + '/upload/' + time_name
+            usr.change_information(self.input)
+
+class UserVerifyView(APIView):
+    @login_required
+    def post(self):
+        self.check_input("true_name", "user_idnum", "user_image", "idcard_image")
+        self.user.myuser.name_true = self.input["true_name"]
+        self.user.myuser.user_IDnum = self.input["user_idnum"]
+        time_name = str(timezone.now().timestamp()) + ".png"
+        img_path = MEDIA_ROOT + '/' + time_name
+        open(img_path, "wb").write(self.input['user_image'][0].read())
+        self.user.myuser.user_image = SITE_DOMAIN + '/upload/' + time_name
+        time_name1 = str(timezone.now().timestamp()) + ".png"
+        img_path1 = MEDIA_ROOT + '/' + time_name1
+        open(img_path1, "wb").write(self.input['idcard_image'][0].read())
+        self.user.myuser.idcard_image = SITE_DOMAIN + '/upload/' + time_name1
+        self.user.myuser.user_status = 1
+        self.user.myuser.save()
 
     @login_required
-    def lookupInvited(self):
-        self.check_input('id')
-        user = MyUser.objects.get(id = self.input['id'])
-        return list(user.meetings_invited)
+    def get(self):
+        if "user_id" in self.input:
+            if self.user.myuser.user_type < 3:
+                raise LogicError("您没有权限进行此项操作！")
+            user1 = MyUser.objects.get(id=int(self.input["user_id"]))
+            if(int(self.input["status"]) == 2):
+                data = {
+                    "user_status": 2
+                }
+            else:
+                data = {
+                    "name_true": '',
+                    "user_IDnum": '',
+                    "user_image": '',
+                    "idcard_image": '',
+                    "user_status": int(self.input["status"])
+                }
+        else:
+            data = {
+                "name_true": '',
+                "user_IDnum": '',
+                "user_image": '',
+                "idcard_image": '',
+                "user_status": 0
+            }
+            user1 = self.user.myuser
+        user1.change_information(data)
 
+class ChangeRelationView(APIView):
     @login_required
-    def lookupRegistered(self):
-        self.check_input('id')
-        user = MyUser.objects.get(id = self.input['id'])
-        return list(user.meetings_registered)
+    def get(self):
+        self.check_input("relation", "meet_id")
+        rel_num = int(self.input["relation"])
+        meet = Meeting.objects.get(id=int(self.input["meet_id"]))
+        relat = Relation.objects.all().filter(user=self.user.myuser, meeting=meet)
+        if len(relat) < 1 and rel_num != 0:
+                relat1 = Relation(user=self.user.myuser, meeting=meet, status=rel_num)
+                relat1.save()
+                return
+        if len(relat) > 0:
+            if rel_num == 0:
+                relat[0].delete()
+            else:
+                relat[0].status = rel_num
+                relat[0].save()
+            return
 
-
-class OrganizerCenterView(APIView):
+class GetRelationView(APIView):
     @login_required
-    def modInfo(self):
-        self.check_input('id')
-        MyUser.objects.get(id = self.input['id']).change_information(self.input)
+    def get(self):
+        relat0 = Relation.objects.all().filter(user=self.user.myuser)
+        data = {
+            "rel1": [{
+                "meet_name": rel.meeting.name,
+                "meet_id": rel.meeting.id
+            } for rel in relat0 if rel.status == 1
+            ],
+            "rel2": [{
+                "meet_name": rel.meeting.name,
+                "meet_id": rel.meeting.id
+            } for rel in relat0 if rel.status == 2
+            ],
+            "rel3": [{
+                 "meet_name": rel.meeting.name,
+                 "meet_id": rel.meeting.id
+            } for rel in relat0 if rel.status == 3
+            ]
+        }
+        return data
+
+class GetPublishView(APIView):
+    @login_required
+    def get(self):
+        if self.user.myuser.user_type != 2:
+            raise LogicError("您没有权限访问这些数据！")
+        meet_list = Meeting.objects.all().filter(organizer= self.user.myuser)
+        data = [{
+            "id": meet.id,
+            "name": meet.name,
+            "description": meet.description,
+            "status": meet.status
+        } for meet in meet_list]
+        return data
 
 class ParticipantManageView(APIView):
     @login_required
-    def lookupParticipant(self):
-        self.check_input('id')
-        meeting = Meeting.objects.get(id = self.input['id'])
-        return list(meeting.users_joined)
-
-    @login_required
-    def removeParticipant(self):
-        self.check_input('id', 'userid')
-        meeting = Meeting.objects.get(id=self.input['id'])
-        user = MyUser.objects.get(id=self.input['userid'])
-        meeting.users_joined.remove(user)
-        if meeting in user.meetings_invited:
-            user.meetings_invited.remove(meeting)
-        elif meeting in user.meetings_joined:
-            user.meetings_joined.remove(meeting)
-        elif meeting in user.meetings_registered:
-            user.meetings_registered.remove(meeting)
-        user.save()
-        meeting.save()
-
-    @login_required
-    def sendNotice(self):
-        pass
-
-    @login_required
-    def sendInvitation(self):
-        self.check_input('id', 'userid')
-        meeting = Meeting.objects.get(id=self.input['id'])
-        user = MyUser.objects.get(id=self.input['userid'])
-        meeting.users_joined.add(user)
-        user.meetings_invited.add(meeting)
-        meeting.save()
-        user.save()
-        #sendWechatInfo
-
-    @login_required
-    def lookupRegister(self):
-        self.check_input('id')
-        meeting = Meeting.objects.get(id=self.input['id'])
-        return list(meeting.users_registered)
-
-    @login_required
-    def acptRegister(self):
-        self.check_input('id', 'userid')
-        meeting = Meeting.objects.get(id=self.input['id'])
-        user = MyUser.objects.get(id=self.input['userid'])
-        meeting.users_joined.add(user)
-        user.meetings_joined.add(meeting)
-        meeting.save()
-        user.save()
-        # sendWechatInfo
-
-    @login_required
-    def rjctRegister(self):
-        self.check_input('id', 'userid')
-        meeting = Meeting.objects.get(id=self.input['id'])
-        user = MyUser.objects.get(id=self.input['userid'])
-        meeting.users_registered.remove(user)
-        user.meetings_registered.remove(meeting)
-        meeting.save()
-        user.save()
-        # sendWechatInfo
-
-class CreateMeetingView(APIView):
-    @login_required
-    def tempSave(self):
-        self.input['status'] = Meeting.STATUS_SAVING
-        Meeting.create_new_meeting(self.input)
-
-    @login_required
-    def publish(self):
-        self.input['status'] = Meeting.STATUS_PENDING
-        Meeting.create_new_meeting(self.input)
+    def get(self):
+        if self.user.myuser.user_type != 2:
+            raise LogicError("您没有权限访问这些数据！")
+        self.check_input("meet_id")
+        meet = Meeting.objects.get(id=int(self.input["meet_id"]))
+        if meet.organizer != self.user.myuser:
+            raise LogicError("您不是活动的创建者，无权获取这些数据！")
+        relats = Relation.objects.all().filter(meeting=meet)
+        data = [{
+            "user_name": relat.user.name,
+            "status": relat.status
+        }for relat in relats]
+        return data

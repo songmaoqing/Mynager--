@@ -28,3 +28,22 @@ class AdminPageView(APIView):
         meeting.status = meeting.STATUS_SAVING
         meeting.save()
         # sendWechatInfo
+
+class UserListView(APIView):
+    @login_required
+    def get(self):
+        if self.user.myuser.user_type < 3:
+            raise InputError("您没有权限访问该内容！")
+        users = MyUser.objects.all()
+        data = [{
+            "name": user.name,
+            "id": user.id,
+            "description": user.description,
+            "true_name": user.name_true,
+            "idcard_num": user.user_IDnum,
+            "status": user.user_status,
+            "image1": user.user_image,
+            "image2": user.idcard_image
+            }for user in users
+        ]
+        return data
