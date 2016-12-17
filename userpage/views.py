@@ -321,18 +321,18 @@ class ChangeRelationView(APIView):
         self.check_input("relation", "meet_id")
         rel_num = int(self.input["relation"])
         meet = Meeting.objects.get(id=int(self.input["meet_id"]))
-        relat = Relation.objects.all().filter(user=self.user.myuser, meeting=meet)
-        if len(relat) < 1 and rel_num != 0:
-                relat1 = Relation(user=self.user.myuser, meeting=meet, status=rel_num)
-                relat1.save()
-                return
-        if len(relat) > 0:
-            if rel_num == 0:
-                relat[0].delete()
-            else:
-                relat[0].status = rel_num
-                relat[0].save()
-            return
+        Relation.ChangeRelation(self.user.myuser, meet, rel_num)
+        return
+
+    @login_required
+    def post(self):
+        self.check_input("relation", "meet_id", "user_id")
+        meet = Meeting.objects.get(id=int(self.input["meet_id"]))
+        if self.user.myuser.user_type != 2 or meet.organizer != self.user.myuser:
+            raise LogicError("您没有权限访问这些数据")
+        rel_num = int(self.input["relation"])
+        user1 = MyUser.objects.get(id=self.input["user_id"])
+        Relation.ChangeRelation(user1, meet, rel_num)
 
 class GetRelationView(APIView):
     @login_required
@@ -383,6 +383,7 @@ class ParticipantManageView(APIView):
         relats = Relation.objects.all().filter(meeting=meet)
         data = [{
             "user_name": relat.user.name,
-            "status": relat.status
+            "status": relat.status,
+            "user_id": relat.user.id
         }for relat in relats]
         return data

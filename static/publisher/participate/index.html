@@ -13,10 +13,7 @@
 </head>
 <body>
 <div id="container">
-	<div id="header">
-		<b>会议参加者管理</b>
-		<div class="clear"></div>
-	</div>
+	<div id="header"></div>
 	<div class="section" id="user_list1"></div>
     <div class="section" id="user_list2"></div>
 	<div class="section">
@@ -54,16 +51,7 @@
 				<div class="clear"></div>
 			</div>
 		</div>
-		<div class="pages">
-			<ul class="pagination">
-				<li><a href="#">&laquo;</a></li>
-				<li class="active"><a href="#">1</a></li>
-				<li><a href="#">2</a></li>
-				<li><a href="#">&raquo;</a></li>
-			</ul>
-		</div>
 	</div>
-
 </div>
 </body>
 <script type="text/template" id="tpl-user_list1">
@@ -83,14 +71,6 @@
             {% endif %}
         {% endfor %}
     </div>
-		<div class="pages">
-			<ul class="pagination">
-				<li><a href="#">&laquo;</a></li>
-				<li class="active"><a href="#">1</a></li>
-				<li><a href="#">2</a></li>
-				<li><a href="#">&raquo;</a></li>
-			</ul>
-		</div>
 		<div class="line">
 			<div class="line_member">发送通知</div>
 			<textarea class="line_member base_textarea form-control" rows="3" name=""></textarea>
@@ -108,31 +88,35 @@
             <div class="item_intro"><p>简介1</p></div>
             <div class="item_note"><p>说明</p></div>
             <div class="btn-group item_sbtn">
-                <button type="button" class="btn btn-default">同意</button>
-                <button type="button" class="btn btn-default">拒绝</button>
+                <button type="button" class="btn btn-default" onclick="ChangeRelation({{ user.user_id }}, 3)">同意</button>
+                <button type="button" class="btn btn-default" onclick="ChangeRelation({{ user.user_id }}, 0)">拒绝</button>
             </div>
             <div class="clear"></div>
         </div>
         {% endif %}
         {% endfor %}
     </div>
-    <div class="pages">
-        <ul class="pagination">
-            <li><a href="#">&laquo;</a></li>
-            <li class="active"><a href="#">1</a></li>
-            <li><a href="#">2</a></li>
-            <li><a href="#">&raquo;</a></li>
-        </ul>
-    </div>
+</script>
+<script type="text/template" id="tpl-header">
+    <b>会议参加者管理</b>
+    <div class="clear"></div>
 </script>
 <script type="text/javascript">
-    var users;
+    var users, meet;
     $(function () {
-        api.get("/api/u/meeting/participate", {"meet_id": urlParam.meet_id }, function (data) {
+        GetPart();
+    });
+    function GetPart() {
+        api.get("/api/u/meeting/participate", { "meet_id": urlParam.meet_id }, function (data) {
             users = data;
             RenderTpl("user_list1", users);
             RenderTpl("user_list2", users);
         }, dftFail)
-    })
+    }
+    function ChangeRelation(user_id, status) {
+        api.post("/api/u/relation/change", { "user_id": user_id, "meet_id": urlParam.meet_id, "relation": status }, function (data) {
+            GetPart();
+        }, dftFail)
+    }
 </script>
 </html>

@@ -140,6 +140,21 @@ class Relation(models.Model):
     meeting = models.ForeignKey(Meeting)
     status = models.IntegerField(default = 0)
 
+    @classmethod
+    def ChangeRelation(cls, user, meet, status):
+        relats = Relation.objects.all().filter(user=user, meeting=meet)
+        if len(relats) < 1 and status > 0:
+            rel = Relation(user=user, meeting=meet, status=status)
+            rel.save()
+            return
+        else:
+            rel = relats[0]
+        if status > 0:
+            rel.status = status
+            rel.save()
+        else:
+            rel.delete()
+
     STATUS_JOINED = 3
     STATUS_SIGNUP = 1
     STATUS_INVITED = 2

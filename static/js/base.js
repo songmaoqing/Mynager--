@@ -148,3 +148,7 @@ function GetUserDetail(fun) {
 function DeleteMeeting(meet_id, fun) {
     api.get("/api/u/meeting/create", { "meeting_id": meet_id }, fun, dftFail);
 }
+
+function GetMeeting(meet_id, fun) {
+  
+}
