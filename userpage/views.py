@@ -149,7 +149,7 @@ class MeetingDetailView(APIView):
 class MeetingCreateView(APIView):
     @login_required
     def post(self):
-        if self.request.user.myuser.user_type < 2:
+        if self.request.user.myuser.user_type != 2:
             raise InputError("您没有权限创建会议！")
         self.check_input('meeting_type', 'name', 'max_people_num', 'phone_num', 'description', 'start_time', 'end_time', 'place', 'uploadpic')
         data = {
