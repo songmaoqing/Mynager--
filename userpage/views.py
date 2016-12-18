@@ -262,12 +262,20 @@ class UserMessageView(APIView):
         if self.request.user.is_authenticated():
             usr = self.request.user.myuser
             data = self.input
+            if "old_pass" in data and "new_pass" in data:
+                user = authenticate(username=self.user.username, password=data["old_pass"])
+                if user:
+                    user.set_password(data["new_pass"])
+                    user.save()
+                    return
+                else:
+                    raise InputError("您输入的旧密码不正确！")
             if "img" in data:
                 time_name = str(timezone.now().timestamp()) + ".png"
                 img_path = MEDIA_ROOT + '/' + time_name
                 open(img_path, "wb").write(data['img'][0].read())
                 data['pic_url'] = SITE_DOMAIN + '/upload/' + time_name
-            usr.change_information(self.input)
+            usr.change_information(data)
 
 class UserVerifyView(APIView):
     @login_required
@@ -302,7 +310,7 @@ class UserVerifyView(APIView):
                     "user_IDnum": '',
                     "user_image": '',
                     "idcard_image": '',
-                    "user_status": int(self.input["status"])
+                    "user_status": 0
                 }
         else:
             data = {
@@ -387,3 +395,5 @@ class ParticipantManageView(APIView):
             "user_id": relat.user.id
         }for relat in relats]
         return data
+
+

@@ -45,8 +45,6 @@ class MyUser(models.Model):
         ]
         for key in list(set(dic.keys()) & set(own_keys)):
             self.__dict__[key] = dic[key]
-        if 'account_pass' in dic:
-            self.user.set_password(dic['account_pass'])
         if 'email' in dic:
             self.user.email=dic['email']
         self.user.save()

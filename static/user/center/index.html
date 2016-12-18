@@ -13,84 +13,9 @@
 </head>
 <body>
 <div id="container"></div>
-<div class="modal fade" id="list_1" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" align="center">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title" id="myModalLabel">会议名称</h4>
-            </div>
-            <table class="tablesize">
-              <tbody>
-              <tr align="center" valign="middle">
-                  <td class="tableitemsize"><p>写软工作业写软工作啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦了了了了了了了了了了了了了了</p></td>
-              </tr>
-              <tr align="center" valign="middle">
-                  <td class="tableitemsize"><p>写软工作业写软工作啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦了了了了了了了了了了了了了了</p></td>
-              </tr>
-              <tr align="center" valign="middle">
-                  <td class="tableitemsize"><p>写软工作业写软工作啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦了了了了了了了了了了了了了了</p></td>
-              </tr>
-              </tbody>
-          </table>
-          <div>
-        <ul class="pagination">
-          <li><a href="#">&laquo;</a></li>
-          <li class="active"><a href="#">1</a></li>
-          <li><a href="#">2</a></li>
-          <li><a href="#">&raquo;</a></li>
-        </ul>
-      </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
-            </div>
-        </div><!-- /.modal-content -->
-    </div><!-- /.modal -->
-</div>
+<div class="modal fade" id="list_1" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" align="center"></div>
 <div class="modal fade" id="list_2" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" align="center"></div>
-<div class="modal fade" id="list_3" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" align="center">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title" id="myModalLabel">会议邀请</h4>
-            </div>
-            <table class="tablesize">
-            <tbody>
-              <tr align="center" valign="middle">
-                  <td class="tableitemsize_3"><p>写软工作业写软工作啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦</p></td>
-                  <td class="tableitemsize_2">
-                    <div class="modal-footer">
-                      <button type="button" class="btn btn-default" data-dismiss="modal">同意</button>
-                      <button type="button" class="btn btn-primary">拒绝</button>
-                  </div>
-                </td>
-              </tr>
-              <tr align="center" valign="middle">
-                  <td class="tableitemsize_3"><p>写软工作业写软工作啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦啦</p></td>
-                  <td class="tableitemsize_2">
-                    <div class="modal-footer">
-                      <button type="button" class="btn btn-default" data-dismiss="modal">同意</button>
-                      <button type="button" class="btn btn-primary">拒绝</button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          <div>
-        <ul class="pagination">
-          <li><a href="#">&laquo;</a></li>
-          <li class="active"><a href="#">1</a></li>
-          <li><a href="#">2</a></li>
-          <li><a href="#">&raquo;</a></li>
-        </ul>
-      </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
-            </div>
-        </div><!-- /.modal-content -->
-    </div><!-- /.modal -->
-</div>
+<div class="modal fade" id="list_3" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" align="center"></div>
 </body>
 <script type="text/template" id="tpl-container">
 <div id="header">
@@ -205,21 +130,21 @@
       <div class="line_member">
         <div class="subline">
           <span class="subline_prompt">旧密码</span>
-          <input class="mid_input form-control subline_file" type="password" name="" onsubmit="" />
+          <input class="mid_input form-control subline_file" type="password" id="old_pass" name="" onsubmit="" />
           <div class="clear"></div>
         </div>
         <div class="subline">
           <span class="subline_prompt">新密码</span>
-          <input class="mid_input form-control subline_file" type="password" name="" onsubmit="" />
+          <input class="mid_input form-control subline_file" type="password" id="new_pass" name="" onsubmit="" />
           <div class="clear"></div>
         </div>
         <div class="subline">
           <span class="subline_prompt">重复新密码</span>
-          <input class="mid_input form-control subline_file" type="password" name="" onsubmit="" />
+          <input class="mid_input form-control subline_file" type="password" id="re_pass" name="" onsubmit="" />
           <div class="clear"></div>
         </div>
       </div>
-      <input class="line_member btn btn-default" type="button" value="确认修改" onclick=""/></br>
+      <input class="line_member btn btn-default" type="button" value="确认修改" onclick="ChangePass()"/></br>
       <div class="clear"></div>
     </div>
   </div>
@@ -242,6 +167,35 @@
             <div class="clear"></div>
         </div>
 </script>
+<script type="text/template" id="tpl-list_1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="myModalLabel">会议名称</h4>
+            </div>
+            <table class="tablesize">
+              <tbody>
+              {% for rel in relation.rel3 %}
+              <tr align="center" valign="middle">
+                  <td class="tableitemsize"><p>您参加了会议《{{ rel.meet_name }}》!</p></td>
+                  <td class="tableitemsize_2">
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-primary" onclick="WithMeeting({{ rel.meet_id }}, 0)">退出会议</button>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+              </tbody>
+          </table>
+          <div>
+      </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal -->
+</script>
 <script type="text/template" id="tpl-list_2">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -256,7 +210,37 @@
                   <td class="tableitemsize"><p>您已经报名了会议《{{ rel.meet_name }}》，请等待审核！</p></td>
                   <td class="tableitemsize_2">
                     <div class="modal-footer">
-                      <button type="button" class="btn btn-primary" >取消报名</button>
+                      <button type="button" class="btn btn-primary" onclick="WithMeeting({{ rel.meet_id }}, 0)">取消报名</button>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+              </tbody>
+          </table>
+          <div>
+      </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal -->
+</script>
+<script type="text/template" id="tpl-list_3">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="myModalLabel">会议名称</h4>
+            </div>
+            <table class="tablesize">
+              <tbody>
+              {% for rel in relation.rel2 %}
+              <tr align="center" valign="middle">
+                  <td class="tableitemsize"><p>您受到了会议《{{ rel.meet_name }}》的邀请！</p></td>
+                  <td class="tableitemsize_2">
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-primary" onclick="WithMeeting({{ rel.meet_id }}, 3)">接受邀请</button>
+                      <button type="button" class="btn btn-primary" onclick="WithMeeting({{ rel.meet_id }}, 0)">拒绝邀请</button>
                   </div>
                 </td>
               </tr>
@@ -359,8 +343,26 @@
         api.get("/api/u/relation/get", {}, function (data) {
             relation = data;
             RenderTpl("meet_relation", { relation });
+            RenderTpl("list_1", { relation });
             RenderTpl("list_2", { relation });
+            RenderTpl("list_3", { relation });
         },dftFail)
+    }
+    function WithMeeting(meet_id, status) {
+        api.get("/api/u/relation/change", { "meet_id": meet_id, "relation": status }, function () {
+            GetRelation();
+        });
+    }
+    function ChangePass() {
+        var oldpass = $("#old_pass").val(), newpass = $("#new_pass").val(), repass = $("#re_pass").val();
+        if(newpass != repass) {
+            alert("两次输入的密码不一致，请重新输入！");
+            return;
+        }
+        api.post("/api/u/user/detail", { "old_pass": oldpass, "new_pass": newpass }, function () {
+            alert("密码修改成功，请您重新登录！");
+            window.location.href = "/user/login";
+        }, dftFail)
     }
 </script>
 </html>
