@@ -149,6 +149,16 @@ function DeleteMeeting(meet_id, fun) {
     api.get("/api/u/meeting/create", { "meeting_id": meet_id }, fun, dftFail);
 }
 
+function CreateNotice(touser_ids, content, fun) {
+    api.post("/api/u/notice/create/", { "to_ids": touser_ids, "content": content }, fun, dftFail);
+}
+
 function GetMeeting(meet_id, fun) {
-  
+    api.get("/api/u/meeting/detail", { "meeting_id": meet_id }, fun, dftFail);
+}
+
+function WithMeeting(meet_id, type) {
+    api.get("/api/u/relation/change", { "meet_id": meet_id, "relation": type }, function () {
+        GetAllList(page_index);
+    });
 }

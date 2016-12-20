@@ -1,7 +1,7 @@
 from codex.baseerror import *
 from codex.baseview import APIView
 from django.utils import timezone
-from wechat.models import MyUser, Meeting, Attachment, Relation
+from wechat.models import MyUser, Meeting, Attachment, Relation, Notice
 from wechat.views import CustomWeChatView
 from django.contrib.auth.models import User
 import urllib
@@ -53,6 +53,7 @@ class MeetingListView(APIView):
                     "name": meet0.name,
                     "status": meet0.status,
                     "organizer": meet0.organizer.name,
+                    "organ_id": meet0.organizer.id,
                     "pic_url": meet0.pic_url,
                     "description": meet0.description,
                     "place": meet0.place,
@@ -66,6 +67,7 @@ class MeetingListView(APIView):
                     "name": meet0.name,
                     "status": meet0.status,
                     "organizer": meet0.organizer.name,
+                    "organ_id": meet0.organizer.id,
                     "pic_url": meet0.pic_url,
                     "description": meet0.description,
                     "place": meet0.place,
@@ -97,12 +99,12 @@ class MeetingListView(APIView):
             data["total_page"] = math.ceil(len0 / num0)
             data["list"] = [{
                 "id": meet0.id,
+                "relation": meet0.get_relationship(self.user.myuser),
                 "meeting_type": meet0.meeting_type,
                 "name": meet0.name,
                 "description": meet0.description,
                 "organizer": meet0.organizer.name,
                 "pic_url": meet0.pic_url,
-                "start_time": meet0.start_time,
                 "place": meet0.place,
                 } for meet0 in meets[start0:end0]
             ]
@@ -122,6 +124,7 @@ class MeetingDetailView(APIView):
             user_type = 0
         if meeting0.status <= 0 and user_type < 2:
             raise LogicError("该会议不处于发布状态，您无法查看该会议的信息！")
+        attachs = Attachment.objects.all().filter(meeting=meeting0)
         return {
             "meeting_type": meeting0.meeting_type,
             "name": meeting0.name,
@@ -134,6 +137,12 @@ class MeetingDetailView(APIView):
             "place": meeting0.place,
             "status": meeting0.status,
             "pic_url": meeting0.pic_url,
+            "attachs": [{
+                "file_name": attach.filename,
+                "file_url": attach.file_url,
+                "file_size": attach.size,
+                "id": attach.id
+            }for attach in attachs]
         }
 
     @login_required
@@ -143,7 +152,23 @@ class MeetingDetailView(APIView):
         self.check_input("meeting_id")
         if 'status' in self.input and self.user.myuser.user_type < 3:
             raise InputError("您没有权限修改会议状态！")
-        meeting0 = Meeting.objects.get(id = self.input["meeting_id"])
+
+        data = self.input
+        meeting0 = Meeting.objects.get(id = data["meeting_id"])
+        if meeting0.end_time < timezone.now():
+            raise LogicError("会议已经结束，您无法修改会议状态！")
+        if "start_time" in data and "end_time" in data:
+            data['start_time'] = datetime.datetime.strptime(data['start_time'], "%Y-%m-%d")
+            data['end_time'] = datetime.datetime.strptime(data['end_time'], "%Y-%m-%d")
+            if data['start_time'] < timezone.now().astimezone(timezone.utc).replace(tzinfo=None) and datetime.datetime.strftime(meeting0.start_time, '%Y-%m-%d') != datetime.datetime.strftime(data['start_time'], '%Y-%m-%d'):
+                raise LogicError("会议开始时间早于当前时间！")
+            if data['start_time'] > data['end_time']:
+                raise LogicError("会议开始时间晚于会议结束时间！")
+        if "uploadpic" in data:
+            time_name = str(timezone.now().timestamp()) + ".png"
+            img_path = MEDIA_ROOT + '/' + time_name
+            open(img_path, "wb").write(data['uploadpic'][0].read())
+            data['pic_url'] = SITE_DOMAIN + '/upload/' + time_name
         meeting0.change_information(self.input)
 
 class MeetingCreateView(APIView):
@@ -159,23 +184,28 @@ class MeetingCreateView(APIView):
             data[key] = self.input[key]
         data['uploadpic'] = self.request.FILES['uploadpic']
         data['organizer'] = self.request.user.myuser
-        data['start_time'] = datetime.datetime.strptime(data['start_time'], "%Y-%m-%d")
+        data['start_time'] = datetime.datetime.strptime(data['start_time'] + "-8", "%Y-%m-%d-%H")
         data['max_people_num'] = int(data['max_people_num'])
-        data['end_time'] = datetime.datetime.strptime(data['end_time'], "%Y-%m-%d")
+        data['end_time'] = datetime.datetime.strptime(data['end_time'] + "-8", "%Y-%m-%d-%H")
+        if data['start_time'] < timezone.now().astimezone(timezone.utc).replace(tzinfo=None):
+            raise LogicError("会议开始时间早于当前时间！")
         if data['start_time'] > data['end_time']:
             raise LogicError("会议开始时间晚于会议结束时间！")
         time_name = str(timezone.now().timestamp()) + ".png"
         img_path = MEDIA_ROOT + '/' + time_name
         open(img_path, "wb").write(data['uploadpic'].read())
         data['pic_url'] = SITE_DOMAIN + '/upload/' + time_name
-        Meeting.create_new_meeting(data)
+        meeting0 = Meeting.create_new_meeting(data)
+        if not "uploadfile" in data:
+            return
+        Attachment.CreateAttachment(data["uploadfile"][0], meeting0)
 
     @login_required
     def get(self):
         self.check_input("meeting_id")
         if self.request.user.myuser.user_type < 2:
             raise InputError("您没有权限删除该会议！")
-        meeting0 = Meeting.objects.get(id = self.input["meeting_id"])
+        meeting0 = Meeting.objects.get(id = int(self.input["meeting_id"]))
         if self.user.myuser.user_type == 2 and meeting0.organizer != self.user.myuser:
             raise LogicError("该会议不是由您创建，您无法删除该会议！")
         meeting0.delete()
@@ -396,4 +426,55 @@ class ParticipantManageView(APIView):
         }for relat in relats]
         return data
 
+    @login_required
+    def post(self):
+        self.check_input("meet_id", "key_word")
+        key = self.input["key_word"]
+        meet = self.input["meet_id"]
+        if self.user.myuser.user_type != 2:
+            raise LogicError("您没有权限访问这些数据！")
+        users = MyUser.objects.all()
+        data = [{
+            "name": user.name,
+            "description": user.description,
+            "id": user.id,
+            "relation": Relation.GetRelation(user.id, meet)
+        }for user in users if user.name.find(key) > -1 or user.description.find(key) > -1]
+        return data
 
+class CreateNoticeView(APIView):
+    @login_required
+    def post(self):
+        self.check_input("to_ids", "content")
+        to_ids = self.input["to_ids"]
+        for to_id in to_ids:
+            user = MyUser.objects.get(id=int(to_id))
+            Notice.CreateNotice(user, self.input["content"])
+
+    @login_required
+    def get(self):
+        self.check_input("notice_id")
+        Notice.DelNotice(int(self.input["notice_id"]))
+
+class NoticeMessageView(APIView):
+    def get(self):
+        notices = Notice.objects.all().filter(touser=self.user.myuser)
+        data = [{
+            "time": datetime.datetime.strftime(notice.time,'%Y-%m-%d %H:%M:%S'),
+            "content": notice.content,
+            "id": notice.id
+        }for notice in notices]
+        return data
+
+class CreateAttachView(APIView):
+    @login_required
+    def post(self):
+        self.check_input("uploadfile", "meet_id")
+        meet = Meeting.objects.get(id=int(self.input["meet_id"]))
+        Attachment.CreateAttachment(self.input["uploadfile"][0], meet)
+
+    @login_required
+    def get(self):
+        self.check_input("attach_id")
+        attach = Attachment.objects.get(id=int(self.input["attach_id"]))
+        attach.delete()

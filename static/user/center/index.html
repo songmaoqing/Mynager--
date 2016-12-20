@@ -13,6 +13,7 @@
 </head>
 <body>
 <div id="container"></div>
+<div class="modal fade" id="list_0" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" align="center"></div>
 <div class="modal fade" id="list_1" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" align="center"></div>
 <div class="modal fade" id="list_2" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" align="center"></div>
 <div class="modal fade" id="list_3" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" align="center"></div>
@@ -152,6 +153,11 @@
 <script type="text/template" id="tpl-meet_relation">
     <div class="section_header">会议活动信息</div>
         <div class="line">
+            <div class="line_member line_prompt">当前共{{ notices.length }}个通知</div>
+                <button type="button" class="btn btn-link" data-toggle="modal" data-target="#list_0">查看</button>
+            <div class="clear"></div>
+        </div>
+        <div class="line">
             <div class="line_member line_prompt">当前共{{ relation.rel3.length }}个已参加会议</div>
                 <button type="button" class="btn btn-link" data-toggle="modal" data-target="#list_1">查看</button>
             <div class="clear"></div>
@@ -167,15 +173,50 @@
             <div class="clear"></div>
         </div>
 </script>
+<script type="text/template" id="tpl-list_0">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="myModalLabel">通知列表</h4>
+            </div>
+            <table class="tablesize">
+              <tbody>
+              {% if notices.length == 0 %}
+              无
+              {% endif %}
+              {% for notice in notices %}
+              <tr align="center" valign="middle">
+                  <td class="tableitemsize">{{ notice.content }}······{{ notice.time }}</td>
+                  <td class="tableitemsize_2">
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-primary" onclick="DelNotice({{ notice.id }})">删除通知</button>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+              </tbody>
+          </table>
+          <div>
+      </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal -->
+</script>
 <script type="text/template" id="tpl-list_1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title" id="myModalLabel">会议名称</h4>
+                <h4 class="modal-title" id="myModalLabel">参加列表</h4>
             </div>
             <table class="tablesize">
               <tbody>
+              {% if relation.rel3.length == 0 %}
+              无
+              {% endif %}
               {% for rel in relation.rel3 %}
               <tr align="center" valign="middle">
                   <td class="tableitemsize"><p>您参加了会议《{{ rel.meet_name }}》!</p></td>
@@ -201,10 +242,13 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title" id="myModalLabel">会议名称</h4>
+                <h4 class="modal-title" id="myModalLabel">报名列表</h4>
             </div>
             <table class="tablesize">
               <tbody>
+              {% if relation.rel1.length == 0 %}
+              无
+              {% endif %}
               {% for rel in relation.rel1 %}
               <tr align="center" valign="middle">
                   <td class="tableitemsize"><p>您已经报名了会议《{{ rel.meet_name }}》，请等待审核！</p></td>
@@ -230,10 +274,13 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title" id="myModalLabel">会议名称</h4>
+                <h4 class="modal-title" id="myModalLabel">邀请列表</h4>
             </div>
             <table class="tablesize">
               <tbody>
+              {% if relation.rel2.length == 0 %}
+              无
+              {% endif %}
               {% for rel in relation.rel2 %}
               <tr align="center" valign="middle">
                   <td class="tableitemsize"><p>您受到了会议《{{ rel.meet_name }}》的邀请！</p></td>
@@ -256,7 +303,7 @@
     </div><!-- /.modal -->
 </script>
 <script type="text/javascript">
-    var user_data, relation;
+    var user_data, relation, notices;
     $(function () {
         GetUserDetail(function (data) {
             if(data["type"] == 0) {
@@ -268,6 +315,7 @@
             RenderTpl("container", { user_data });
         });
         GetRelation();
+        GetNotice();
     });
     function change_base_message() {
         var word, dic = {
@@ -342,7 +390,7 @@
     function GetRelation() {
         api.get("/api/u/relation/get", {}, function (data) {
             relation = data;
-            RenderTpl("meet_relation", { relation });
+            RenderTpl("meet_relation", { relation, notices });
             RenderTpl("list_1", { relation });
             RenderTpl("list_2", { relation });
             RenderTpl("list_3", { relation });
@@ -363,6 +411,18 @@
             alert("密码修改成功，请您重新登录！");
             window.location.href = "/user/login";
         }, dftFail)
+    }
+    function GetNotice() {
+        api.get("/api/u/notice/message/", {}, function (data) {
+            notices = data;
+            RenderTpl("list_0", { notices });
+            RenderTpl("meet_relation", { relation, notices });
+        }, dftFail);
+    }
+    function DelNotice(id) {
+        api.get("/api/u/notice/create/", { "notice_id": id }, function (data) {
+            GetNotice();
+        }, dftFail);
     }
 </script>
 </html>

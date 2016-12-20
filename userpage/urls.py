@@ -20,5 +20,8 @@ urlpatterns = [
     url(r'^user/verify/?$', UserVerifyView.as_view()),
     url(r'^relation/change/?$', ChangeRelationView.as_view()),
     url(r'^relation/get/?$', GetRelationView.as_view()),
+    url(r'^notice/create/?$', CreateNoticeView.as_view()),
+    url(r'^notice/message/?$', NoticeMessageView.as_view()),
+    url(r'^attachment/create/?$', CreateAttachView.as_view()),
     url(r'^register/?$', RegisterView.as_view()),
 ]

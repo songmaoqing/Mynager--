@@ -8,7 +8,7 @@
 	<script type="text/javascript" src="/js/jquery-3.1.0.min.js"></script>
     <script type="text/javascript" src="/js/bootstrap.min.js"></script>
 	<script type="text/javascript" src="/3rd/swig.js"></script>
-	<script type="text/javascript" src="/js/basicapi.js"></script>
+	<script type="text/javascript" src="/js/base.js"></script>
 	<script type="text/javascript" src="/js/homepage.js"></script>
 </head>
 <body>
@@ -54,9 +54,9 @@
     <div class="line">
       <div class="line_member">关键词:</div>
       <div class="input-group long_input line_member">
-        <input class="form-control" type="text">
+        <input class="form-control" id="key_word" type="text">
         <span class="input-group-btn">
-          <button class="btn btn-default" type="button">搜索</button>
+          <button class="btn btn-default" type="button" onclick="SearchMeeting()">搜索</button>
         </span>
       </div>
       <div class="clear"></div>
@@ -140,7 +140,7 @@ function GetAllList(index) {
         for(var i = 0; i < total_page; i++)
             pages[i] = i + 1;
         meetings = data["list"];
-        $("#meeting_lists").html(swig.render($("#tpl-meeting_lists").html(), { meetings, page_index, total_page, pages }));
+        RenderTpl("meeting_lists", { meetings, page_index, total_page, pages });
         for (var j = 1; i <= total_page; i++) {
             if($("#pagenum" + i).hasClass("active"))
                 $("#pagenum" + i).removeClass("active");
@@ -148,15 +148,16 @@ function GetAllList(index) {
         $("#pagenum" + index).addClass("active");
     }, dftFail);
 }
-    function SearchMeeting(key_word, page_index, fun0) {
-        api.post('/api/u/meeting/list', {"key_word": key_word, "meeting_num": meeting_num, "page_index": page_index}, function (data) {
-            fun0(data);
-        }, dftFail);
-    }
-    function WithMeeting(meet_id, type) {
-        api.get("/api/u/relation/change", { "meet_id": meet_id, "relation": type }, function () {
-            GetAllList(page_index);
-        });
+    function SearchMeeting() {
+        var key_word = $("#key_word").val();
+        key_word = key_word.trim();
+        if(key_word.length == 0)
+                return;
+        if(key_word.length > 20) {
+            alert("关键词长度过长！");
+            return;
+        }
+        window.location.href = "/user/search?key_word=" + key_word;
     }
 	$(function () {
         if (urlParam.search)

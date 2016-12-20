@@ -5,6 +5,7 @@
 	<title>会议管理</title>
 	<link rel="stylesheet" href="/css/bootstrap.min.css">
 	<link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/base-y.css">
 	<script type="text/javascript" src="/js/base.js"></script>
 	<script type="text/javascript" src="/js/jquery-3.1.0.min.js"></script>
 	<script type="text/javascript" src="/js/bootstrap.min.js"></script>
@@ -21,15 +22,16 @@
 	</div>
 	<div class="section">
 		<div class="section_header">会议批准</div>
-		<div class="list" id="meeting_lists1"></div>
+		<div class="list" id="meeting_list1"></div>
 	</div>
 	<div class="section">
-		<div class="section_header">会议搜索与管理</div>
+		<div class="section_header">会议管理</div>
 		<div class="list" id="meeting_list2"></div>
 	</div>
 </div>
+<div id="reasons"></div>
 </body>
-<script type="text/template" id="tpl-meeting_lists1">
+<script type="text/template" id="tpl-meeting_list1">
     {% for meet in meetings %}
     <div class="item">
         <div class="item_name"><p>{{ meet.name }}</p></div>
@@ -42,21 +44,6 @@
         </div>
         <div class="clear"></div>
     </div>
-    <div class="modal fade" id="reject_input_{{ mmet_id }}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" align="center">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title" id="myModalLabel">请输入理由</h4>
-            </div>
-            <textarea class="yinputtext" rows="5" placeholder="最多输入150字" maxlength=150></textarea>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
-                <button type="button" class="btn btn-primary">提交更改</button>
-            </div>
-        </div><!-- /.modal-content -->
-    </div><!-- /.modal -->
-</div>
     {% endfor %}
 </script>
 <script type="text/template" id="tpl-meeting_list2">
@@ -90,6 +77,25 @@
     </div>
     {% endfor %}
 </script>
+<script type="text/template" id="tpl-reasons">
+    {% for meet in meetings %}
+    <div class="modal fade" id="reject_input_{{ meet.id }}" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" align="center">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="myModalLabel">请输入理由</h4>
+            </div>
+            <textarea class="yinputtext" rows="5" id="input_reason_{{ meet.id }}" placeholder="最多输入150字" maxlength=150></textarea>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" onclick="SubReason('{{ meet.name }}', {{ meet.id }}, {{ meet.organ_id }})">确定</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal -->
+    </div>
+    {% endfor %}
+</script>
 <script type="text/javascript">
     var page_index = 0, meetings, meetings1, meeting_num = 6;
     function GetAllList(index, stat) {
@@ -102,10 +108,12 @@
             page_index = index;
             meetings = data["list"];
             //("#page_nums").html(swig.render($("#tpl-page_nums").html(), { page_index }));
-            if(stat == 0)
-                $("#meeting_lists1").html(swig.render($("#tpl-meeting_lists1").html(), { meetings }));
+            if(stat == 0) {
+                RenderTpl("meeting_list1", {  meetings });
+                RenderTpl("reasons", {  meetings });
+            }
             else
-                $("#meeting_list2").html(swig.render($("#tpl-meeting_list2").html(), { meetings }));
+                RenderTpl("meeting_list2", { meetings });
         }, dftFail);
     }
     function Allow(meet_id) {
@@ -128,6 +136,19 @@
                     alert("该会议已经被批准进行！");
             window.location.reload(true);
         }, dftFail);
+    }
+    function SubReason(meet_name, meet_id, organ_id) {
+        var content = $("#input_reason_" + meet_id).val();
+        content = content.trim();
+        if(content.length > 150 || content.length < 1) {
+            alert("原因过长或过短！");
+            return;
+        }
+        CreateNotice([organ_id], "您的会议" + meet_name + "被管理员拒绝举行，原因是：" + content + "；该会议已被删除！", function () {
+            DeleteMeeting(meet_id, function () {
+                window.location.reload();
+            });
+        });
     }
     $(function () {
         GetAllList(1, 0);

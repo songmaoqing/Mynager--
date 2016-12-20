@@ -1,7 +1,9 @@
 from django.db import models
 from django.utils import timezone
 from codex.baseerror import LogicError
+import datetime
 from django.contrib.auth.models import User
+from Mynager.settings import MEDIA_ROOT, SITE_DOMAIN
 
 class MyUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -91,6 +93,7 @@ class Meeting(models.Model):
         if 'organizer' in dic.keys():
             meeting.organizer = dic['organizer']
         meeting.save()
+        return meeting
 
     def change_information(self, dic):
         own_keys = [
@@ -108,12 +111,6 @@ class Meeting(models.Model):
             'homepage_url'
         ]
         for key in list(set(dic.keys()) & set(own_keys)):
-            if key == 'start_time' and timezone.now() > self[key]:
-                raise LogicError("在活动开始后修改活动开始时间！")
-            if key == 'end_time' and timezone.now() > self[key]:
-                raise LogicError("在活动结束后修改活动开始时间！")
-            if key == 'name' and self['status'] > self.STATUS_PENDING:
-                raise LogicError("活动已经审核通过，无法修改活动名称！")
             self.__dict__[key] = dic[key]
         self.save()
 
@@ -131,7 +128,28 @@ class Meeting(models.Model):
 
 class Attachment(models.Model):
     filename = models.CharField(max_length=128)
+    file_url = models.CharField(max_length=128)
+    size = models.CharField(max_length=32)
     meeting = models.ForeignKey(Meeting)
+
+    @classmethod
+    def CreateAttachment(cls, file, meet):
+        time_name1 = str(timezone.now().timestamp())[:10] + file.name
+        file_path = MEDIA_ROOT + '/' + time_name1
+        open(file_path, "wb").write(file.read())
+        file_url = SITE_DOMAIN + '/upload/' + time_name1
+        file_size = file.size / 1024
+        if file_size < 1024:
+            size = str(file_size)[:5] + "KB"
+        else:
+            file_size = file_size / 1024
+            if file_size < 1024:
+                size = str(file_size)[:5] + "MB"
+            else:
+                file_size = file_size / 1024
+                size = str(file_size)[:5] + "GB"
+        attach = Attachment(filename=file.name, file_url=file_url, meeting=meet, size=size)
+        attach.save()
 
 class Relation(models.Model):
     user = models.ForeignKey(MyUser)
@@ -145,31 +163,41 @@ class Relation(models.Model):
             rel = Relation(user=user, meeting=meet, status=status)
             rel.save()
             return
-        else:
+        elif len(relats) > 0:
             rel = relats[0]
-        if status > 0:
-            rel.status = status
-            rel.save()
+            if status == 0:
+                rel.delete()
+            elif status > 0:
+                rel.status = status
+                rel.save()
+
+    @classmethod
+    def GetRelation(cls, user_id, meet_id):
+        user = MyUser.objects.get(id=int(user_id))
+        meet = Meeting.objects.get(id=int(meet_id))
+        relats = Relation.objects.all().filter(user=user, meeting=meet)
+        if len(relats) == 0:
+            return 0
         else:
-            rel.delete()
+            return relats[0].status
 
     STATUS_JOINED = 3
     STATUS_SIGNUP = 1
     STATUS_INVITED = 2
 
 class Notice(models.Model):
-    time=models.DateField(null=True)
+    time=models.DateTimeField(null=True)
     touser=models.ForeignKey(MyUser)
-    fromname=models.CharField(max_length=64)
+    fromname=models.CharField(max_length=64, null=True)
     content=models.CharField(max_length=256)
 
     @classmethod
-    def CreateNotice(cls, user, name, con):
-        note = Notice(touser=user, fromname=name, content=con, time=timezone.now())
+    def CreateNotice(cls, user, con):
+        note = Notice(touser=user, content=con, time=timezone.now() + timezone.timedelta(hours=8))
         note.save()
 
     @classmethod
     def DelNotice(cls, noteid):
         note1 = Notice.objects.all().filter(id=noteid)
-        if(len(note1) > 1):
+        if(len(note1) > 0):
             note1[0].delete()

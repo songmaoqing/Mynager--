@@ -36,8 +36,8 @@
                     {% if meet.status > 0 %}
                         <button type="button" class="btn btn-default" onclick="window.open('/publisher/participate?meet_id={{ meet.id }}')">参加者管理</button>
                     {% endif %}
-					<button type="button" class="btn btn-default">删除</button>
-					<button type="button" class="btn btn-default">修改</button>
+					<button type="button" class="btn btn-default" onclick="DeleteMeeting({{ meet.id }}, GetList)">删除</button>
+					<button type="button" class="btn btn-default" onclick="window.open('/meeting/change?meet_id={{ meet.id }}')">修改</button>
 				</div>
 				<div class="clear"></div>
 			</div>
@@ -47,10 +47,13 @@
 <script type="text/javascript">
     var meet_list;
     $(function () {
+        GetList();
+    });
+    function GetList() {
         api.get("/api/u/publish/list/", {}, function (data) {
             meet_list = data;
             RenderTpl("meet_list", meet_list);
         }, dftFail);
-    })
+    };
 </script>
 </html>

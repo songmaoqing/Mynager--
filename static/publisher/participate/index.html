@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 	<meta charset="utf-8">
-	<title>会议参加者管理</title>
+	<title id="title"></title>
 	<link rel="stylesheet" href="/css/bootstrap.min.css">
 	<link rel="stylesheet" href="/css/base.css">
 	<link rel="stylesheet" type="text/css" href="/css/base-y.css">
@@ -13,49 +13,33 @@
 </head>
 <body>
 <div id="container">
-	<div id="header"></div>
+	<div id="header">
+        <b>会议参加者管理</b>
+        <div class="clear"></div>
+    </div>
 	<div class="section" id="user_list1"></div>
     <div class="section" id="user_list2"></div>
 	<div class="section">
-		<div class="section_header">邀请参加者</div>
-		<div class="line">
-			<div class="line_member">关键词:</div>
-			<div class="input-group long_input line_member">
-				<input class="form-control" type="text">
-				<span class="input-group-btn">
-					<button class="btn btn-default" type="button">搜索</button>
-				</span>
-			</div>
-			<div class="clear"></div>
-		</div>
-		<div class="list">
-			<div class="item">
-				<div class="item_name"><p>搜索结果1姓名</p></div>
-				<div class="item_intro"><p>简介1</p></div>
-				<div class="item_note"><p>已接受邀请</p></div>
-				<div class="clear"></div>
-			</div>
-			<div class="item">
-				<div class="item_name"><p>搜索结果2姓名</p></div>
-				<div class="item_intro"><p>简介2</p></div>
-				<div class="item_note"><p>已发送邀请</p></div>
-				<div class="clear"></div>
-			</div>
-			<div class="item">
-				<div class="item_name"><p>搜索结果3姓名</p></div>
-				<div class="item_intro"><p>简介3</p></div>
-				<div class="item_note"><p>未邀请</p></div>
-				<div class="btn-group item_sbtn">
-					<button type="button" class="btn btn-default">发送邀请</button>
-				</div>
-				<div class="clear"></div>
-			</div>
-		</div>
-	</div>
+        <div class="section_header">邀请参加者</div>
+        <div class="line">
+            <div class="line_member">关键词:</div>
+            <div class="input-group long_input line_member">
+                <input class="form-control" id="key_word" type="text">
+                <span class="input-group-btn">
+                    <button class="btn btn-default" type="button" onclick="SearchUsers()">搜索</button>
+                </span>
+            </div>
+            <div class="clear"></div>
+            <div class="list" id="user_list3"></div>
+        </div>
+    </div>
 </div>
 </body>
+<script type="text/template" id="tpl-title">
+    {{ meet.name }}
+</script>
 <script type="text/template" id="tpl-user_list1">
-    <div class="section_header">当前参加者</div>
+    <div class="section_header">当前参加者和邀请者</div>
     <div class="list">
         {% for user in users %}
             {% if user.status > 1 %}
@@ -64,7 +48,7 @@
 				<div class="item_intro"><p>简介1</p></div>
 				<div class="item_note"><p>{% if user.status == 2 %}已发送邀请{% else %}参加会议{% endif %}</p></div>
 				<div class="btn-group item_sbtn">
-					<button type="button" class="btn btn-default">{% if user.status == 2 %}取消邀请{% else %}移除参加者{% endif %}</button>
+                    <button type="button" class="btn btn-default" onclick="ChangeRelation({{ user.user_id }}, 0)">{% if user.status == 2 %}取消邀请{% else %}移除参加者{% endif %}</button>
 				</div>
 				<div class="clear"></div>
 		</div>
@@ -73,8 +57,8 @@
     </div>
 		<div class="line">
 			<div class="line_member">发送通知</div>
-			<textarea class="line_member base_textarea form-control" rows="3" name=""></textarea>
-			<input class="line_member btn btn-default" type="button" value="发送" onclick=""/></br>
+			<textarea id="notice" class="line_member base_textarea form-control" rows="3" name=""></textarea>
+			<input class="line_member btn btn-default" type="button" value="发送" onclick="SendNotice()"/></br>
 			<div class="clear"></div>
 		</div>
 </script>
@@ -97,14 +81,29 @@
         {% endfor %}
     </div>
 </script>
-<script type="text/template" id="tpl-header">
-    <b>会议参加者管理</b>
-    <div class="clear"></div>
+<script type="text/template" id="tpl-user_list3">
+    {% for user in search_users %}
+        {% if user.relation == 0 %}
+        <div class="item">
+            <div class="item_name"><p>{{ user.name }}</p></div>
+            <div class="item_intro"><p>{{ user.description }}</p></div>
+            <div class="item_note"><p>未邀请</p></div>
+            <div class="btn-group item_sbtn">
+                <button type="button" class="btn btn-default" onclick="ChangeInvite({{ user.id }}, 2)">发送邀请</button>
+            </div>
+            <div class="clear"></div>
+        </div>
+        {% endif %}
+    {% endfor %}
 </script>
 <script type="text/javascript">
-    var users, meet;
+    var users, search_users, meet;
     $(function () {
         GetPart();
+        GetMeeting(urlParam.meet_id, function (data) {
+            meet = data;
+            RenderTpl("title", meet);
+        });
     });
     function GetPart() {
         api.get("/api/u/meeting/participate", { "meet_id": urlParam.meet_id }, function (data) {
@@ -117,6 +116,44 @@
         api.post("/api/u/relation/change", { "user_id": user_id, "meet_id": urlParam.meet_id, "relation": status }, function (data) {
             GetPart();
         }, dftFail)
+    }
+    function SearchUsers() {
+        var word = $("#key_word").val();
+        if (word.trim() == ""){
+            alert("请输入具体关键字！");
+            return;
+        }
+        api.post("/api/u/meeting/participate/", { "meet_id": urlParam.meet_id, "key_word": word }, function (data) {
+            search_users = data;
+            RenderTpl("user_list3", search_users);
+        }, dftFail)
+    }
+    function ChangeInvite(user_id, status) {
+        api.post("/api/u/relation/change", { "user_id": user_id, "meet_id": urlParam.meet_id, "relation": status }, function (data) {
+            GetPart();
+            SearchUsers();
+        }, dftFail)
+    }
+    function SendNotice() {
+        var word = $("#notice").val();
+        if (word.trim() == '') {
+            alert("通知内容不能为空！");
+            return;
+        }
+        if(confirm("您即将向参加会议的所有用户发送通知“" + word + "”，您确定要这么做么？")) {
+            var toids =  new Array();
+            for (var i = 0; i < users.length; i++) {
+                if(users[i].status == 3) {
+                    toids[toids.length] = users[i].user_id;
+                }
+            }
+            var fromname = "会议“" + meet.name + "”：";
+            word = fromname + word;
+            CreateNotice(toids, word, function (data) {
+                alert("会议通知“" + word + "”已经发送给所有的会议参加者！");
+                window.location.reload();
+            });
+        }
     }
 </script>
 </html>

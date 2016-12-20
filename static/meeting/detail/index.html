@@ -69,12 +69,15 @@
 		<div class="line">
 			<div class="line_member">会议附件</div>
 			<div class="line_member">
-				<div class="subline">
-					<a href="#">下载附件1(12.450MB)</a>
-				</div>
-				<div class="subline">
-					<a href="#">下载附件2(12.450MB)</a>
-				</div>
+                {% if showdata.attachs.length == 0 %}
+                    无
+                {% else %}
+				{% for attach in showdata.attachs %}
+                <div class="subline">
+                <a href="{{ attach.file_url }}" download="{{ attach.file_name }}">{{ attach.file_name }}({{ attach.file_size }})</a>
+                </div>
+                {% endfor %}
+                {% endif %}
 			</div>
 			<div class="clear"></div>
 		</div>
@@ -82,17 +85,15 @@
 			<div class="line_member">会议附图</div>
 			<img class="line_member" src="{{ showdata.pic_url }}">
 			<div class="clear"></div>
+        </div>
 </script>
 <script type="text/javascript">
     var showdata;
     $(function () {
         var meet_id = urlParam.id;
-        api.get("/api/u/meeting/detail", { "meeting_id": meet_id }, function (data) {
+        GetMeeting(meet_id, function (data) {
             showdata = data;
-            $("#meet_detail").html(swig.render($("#tpl-meet_detail").html(), { showdata }));
-            console.log(showdata);
-        }, function () {
-            alert("您没有权限浏览会议信息或该会议不存在！");
+            RenderTpl("meet_detail", showdata);
         });
     })
 </script>
