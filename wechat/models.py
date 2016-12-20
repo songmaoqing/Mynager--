@@ -38,7 +38,6 @@ class MyUser(models.Model):
             'pic_url',
             'name',
             'name_true',
-            'email',
             'user_status',
             'user_IDnum',
             'open_id',

@@ -51,13 +51,13 @@ class MeetingListView(APIView):
                     "meeting_type": meet0.meeting_type,
                     "relation": meet0.get_relationship(self.user.myuser),
                     "name": meet0.name,
-                    "status": meet0.status,
+                    "status": 3 if meet0.end_time < timezone.now() else meet0.status,
                     "organizer": meet0.organizer.name,
                     "organ_id": meet0.organizer.id,
                     "pic_url": meet0.pic_url,
                     "description": meet0.description,
                     "place": meet0.place,
-                    } for meet0 in meetings[start0:end0]
+                   } for meet0 in meetings[start0:end0]
                 ]
             else:
                 data["list"] = [{
@@ -65,7 +65,7 @@ class MeetingListView(APIView):
                     "meeting_type": meet0.meeting_type,
                     "relation": -1,
                     "name": meet0.name,
-                    "status": meet0.status,
+                    "status": 3 if meet0.end_time < timezone.now() else meet0.status,
                     "organizer": meet0.organizer.name,
                     "organ_id": meet0.organizer.id,
                     "pic_url": meet0.pic_url,
@@ -275,6 +275,8 @@ class UserMessageView(APIView):
             return {
                 'type': usr.user_type,
                 'user_status': usr.user_status,
+                'id': usr.id,
+                'account': usr.user.username,
                 'name': usr.name,
                 'phone_num': usr.phone_num,
                 'description': usr.description,

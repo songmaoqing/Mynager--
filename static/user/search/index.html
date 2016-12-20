@@ -36,7 +36,7 @@
     </div></br>
     {% for meet in meetings %}
     <div class="search_block">
-      <img class="search_img" src="http://www.runoob.com/wp-content/uploads/2014/07/slide1.png">
+      <img class="search_img" src="{{ meet.pic_url }}">
       <div class="search_name"><p>{{ meet.name }}</p></div>
       <div class="search_intro"><p>{{ meet.description }}</p></div>
       <div class="btn-group item_btn">

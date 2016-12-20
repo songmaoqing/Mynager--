@@ -36,10 +36,15 @@
     <div class="section">
     <div class="section_header">设置基本信息</div>
     <div class="line">
+      <div class="line_member">账户名称</div>
+      <div class="line_member">{{ user_data.account }}</div>
+      <div class="clear"></div>
+    </div>
+    <div class="line">
       <div class="line_member">绑定微信</div>
       <input class="line_member mid_input form-control" title="微信用户的openid" disabled="disabled" type="text" name="" value="{% if user_data.open_id != '' %} {{ user_data.open_id }} {% else %}无 {% endif %}" onsubmit="" />
       {% if user_data.open_id %}
-        <input class="line_member btn btn-default" type="button" value="解除绑定" onclick=""/>
+        <input class="line_member btn btn-default" type="button" value="解除绑定" onclick="DelOpen_id({{ user_data.id }})"/>
       {% endif %}
       <div class="clear"></div>
     </div>
@@ -49,7 +54,7 @@
       <div class="clear"></div>
     </div>
     <div class="line">
-      <div class="line_member">设置名称</div>
+      <div class="line_member">设置昵称</div>
       <input class="line_member base_input long_input form-control" id="name" value="{{ user_data.name }}" type="text" name=""/>
       <div class="clear"></div>
     </div>
@@ -423,6 +428,11 @@
         api.get("/api/u/notice/create/", { "notice_id": id }, function (data) {
             GetNotice();
         }, dftFail);
+    }
+    function DelOpen_id(id) {
+        api.post("/api/u/user/detail", { open_id: '' }, function () {
+            window.location.reload();
+        }, dftFail)
     }
 </script>
 </html>

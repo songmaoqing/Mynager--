@@ -58,20 +58,18 @@
             拒绝
             {% elif meet.status == 1 %}
             正常
+            {% elif meet.status == 3 %}
+            结束
             {% endif %}
         </p></div>
         <div class="btn-group item_btn">
             <button type="button" class="btn btn-default" onclick="window.open('/meeting/detail?id={{ meet.id }}')">查看详情</button>
-            <button type="button" class="btn btn-default" onclick="Change({{ meet.id }}, {{ meet.status }})">
-            {% if meet.status == -1 %}
-            恢复
-            {% elif meet.status == -2 %}
-            同意
-            {% elif meet.status == 1 %}
-            停止
+            {% if meet.status != 3 %}
+                <button type="button" class="btn btn-default" onclick="Change({{ meet.id }}, {{ meet.status }})">
+                {% if meet.status == -1 %}恢复{% elif meet.status == -2 %}同意{% else %}停止{% endif %}
+                </button>
             {% endif %}
-            </button>
-            <button type="button" class="btn btn-default">删除</button>
+            <button type="button" class="btn btn-default" onclick="DelMeet({{ meet.id }})">删除</button>
         </div>
         <div class="clear"></div>
     </div>
@@ -130,11 +128,8 @@
         else
                 type = 1;
         api.post("/api/u/meeting/detail", { "meeting_id": meet_id, "status": type }, function (data) {
-            if(type == -1)
-                alert("该会议已经被停止举行！");
-            else
-                    alert("该会议已经被批准进行！");
-            window.location.reload(true);
+            GetAllList(1, 0);
+            GetAllList(1, 1);
         }, dftFail);
     }
     function SubReason(meet_name, meet_id, organ_id) {
@@ -149,6 +144,12 @@
                 window.location.reload();
             });
         });
+    }
+    function DelMeet(meet_id) {
+        api.get("/api/u/meeting/create", { "meeting_id": meet_id }, function (data) {
+            GetAllList(1, 0);
+            GetAllList(1, 1);
+        }, dftFail)
     }
     $(function () {
         GetAllList(1, 0);
