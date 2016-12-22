@@ -39,7 +39,7 @@
         <div class="item_note"><p>{{ meet.organizer }}</p></div>
         <div class="btn-group item_btn">
             <button type="button" class="btn btn-default" onclick="window.open('/meeting/detail?id={{ meet.id }}')">查看详情</button>
-            <button type="button" class="btn btn-default" onclick="Allow({{ meet.id }})">同意</button>
+            <button type="button" class="btn btn-default" onclick="Allow({{ meet.id }}, '{{ meet.name }}', {{ meet.organ_id }})">同意</button>
             <button type="button" class="btn btn-default" data-toggle="modal" data-target="#reject_input_{{ meet.id }}">拒绝</button>
         </div>
         <div class="clear"></div>
@@ -114,10 +114,12 @@
                 RenderTpl("meeting_list2", { meetings });
         }, dftFail);
     }
-    function Allow(meet_id) {
+    function Allow(meet_id, meet_name, user_id) {
         //console.log(meet_id);
         api.post("/api/u/meeting/detail", { "meeting_id": meet_id, "status": 1 }, function (data) {
             alert("该会议已经被批准举行！");
+            var word = "您的会议“" + meet_name + "”已经被批准举行！";
+            CreateNotice([user_id], word);
             window.location.reload(true);
         }, dftFail);
     }

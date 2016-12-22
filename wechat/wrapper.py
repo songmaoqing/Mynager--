@@ -61,11 +61,11 @@ class WeChatHandler(object):
     def reply_single_news(self, article):
         return self.reply_news([article])
 
-    def get_message(self, name, **data):
+    def get_message(self, name, data):
         if name.endswith('.html'):
             name = name[: -5]
         return get_template('messages/' + name + '.html').render(dict(
-            handler=self, user=self.user, **data
+            handler=self, user=self.user, data=data
         ))
 
     def is_msg_type(self, check_type):

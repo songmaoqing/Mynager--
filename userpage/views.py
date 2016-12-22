@@ -158,8 +158,8 @@ class MeetingDetailView(APIView):
         if meeting0.end_time < timezone.now():
             raise LogicError("会议已经结束，您无法修改会议状态！")
         if "start_time" in data and "end_time" in data:
-            data['start_time'] = datetime.datetime.strptime(data['start_time'], "%Y-%m-%d")
-            data['end_time'] = datetime.datetime.strptime(data['end_time'], "%Y-%m-%d")
+            data['start_time'] = datetime.datetime.strptime(data['start_time'] + "-8", "%Y-%m-%d-%H")
+            data['end_time'] = datetime.datetime.strptime(data['end_time'] + "-8", "%Y-%m-%d-%H")
             if data['start_time'] < timezone.now().astimezone(timezone.utc).replace(tzinfo=None) and datetime.datetime.strftime(meeting0.start_time, '%Y-%m-%d') != datetime.datetime.strftime(data['start_time'], '%Y-%m-%d'):
                 raise LogicError("会议开始时间早于当前时间！")
             if data['start_time'] > data['end_time']:
@@ -459,6 +459,7 @@ class CreateNoticeView(APIView):
         Notice.DelNotice(int(self.input["notice_id"]))
 
 class NoticeMessageView(APIView):
+    @login_required
     def get(self):
         notices = Notice.objects.all().filter(touser=self.user.myuser)
         data = [{

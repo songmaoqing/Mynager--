@@ -73,6 +73,14 @@
     }
     function ChangeStatus(user_id, status) {
         api.get("/api/u/user/verify", { "user_id": user_id, "status": status }, function () {
+            if (status == 2) {
+                var word = "管理员同意了您的实名认证。";
+                CreateNotice([ user_id ], word);
+            }
+            else if(status == 1) {
+                var word = "管理员拒绝了您的实名认证。";
+                CreateNotice([ user_id ], word);
+            }
             alert("操作成功！");
             GetUserList();
         })
